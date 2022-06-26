@@ -87,7 +87,12 @@ export default class RegionsPlugin {
                     }
                     return this.regions.add(options);
                 },
-
+                updateRegion(options) {
+                    if (!this.initialisedPluginList.regions) {
+                        this.initPlugin('regions');
+                    }
+                    return this.regions.update(options);
+                },
                 clearRegions() {
                     this.regions && this.regions.clear();
                 },
@@ -224,6 +229,13 @@ export default class RegionsPlugin {
         });
 
         return region;
+    }
+
+    update(params) {
+        const region = params.id in this.list ? this.list[params.id] : null;
+        if (region) {
+            region.update(params);
+        }
     }
 
     /**

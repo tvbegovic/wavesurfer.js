@@ -2,12 +2,16 @@
  * @typedef {Object} MarkerParams
  * @desc The parameters used to describe a marker.
  * @example wavesurfer.addMarker(regionParams);
+ * @property {id} string unique id of marker
  * @property {number} time The time to set the marker at
  * @property {?label} string An optional marker label
  * @property {?color} string Background color for marker
  * @property {?position} string "top" or "bottom", defaults to "bottom"
  * @property {?markerElement} element An HTML element to display instead of the default marker image
  * @property {?draggable} boolean Set marker as draggable, defaults to false
+ * @property {?textPosition} string "left" or "right" defaults to "right"
+ * @property {?lowerLimit} double lower limit for marker value, if not set then no limit
+ * @property {?upperLimit} double upper limit for marker value, if not set then no limit
  */
 
 
@@ -35,6 +39,8 @@
 
 const DEFAULT_FILL_COLOR = "#D8D8D8";
 const DEFAULT_POSITION = "bottom";
+const DEFAULT_TEXTPOSITION = "right";
+const MOUSEMOVE_FREQUENCYMS = 50;
 
 export default class MarkersPlugin {
     /**
@@ -69,6 +75,12 @@ export default class MarkersPlugin {
                 },
                 clearMarkers() {
                     this.markers && this.markers.clear();
+                },
+                updateMarker(index, options) {
+                    if (!this.initialisedPluginList.markers) {
+                        this.initPlugin('markers');
+                    }
+                    return this.markers.update(index, options);
                 }
             },
             instance: MarkersPlugin
@@ -84,6 +96,9 @@ export default class MarkersPlugin {
         this.markerWidth = 11;
         this.markerHeight = 22;
         this.dragging = false;
+        this.lastDragEvent = null;
+
+        this.mouseEventsAdded = false;
 
 
         this._onResize = () => {
@@ -103,11 +118,7 @@ export default class MarkersPlugin {
                 return;
             }
 
-            this.onMouseMove = (e) => this._onMouseMove(e);
-            window.addEventListener('mousemove', this.onMouseMove);
-
-            this.onMouseUp = (e) => this._onMouseUp(e);
-            window.addEventListener("mouseup", this.onMouseUp);
+            this.addMouseEvents();
         };
 
         this.markers = [];
@@ -115,6 +126,15 @@ export default class MarkersPlugin {
             this.wrapper = this.wavesurfer.drawer.wrapper;
             this._updateMarkerPositions();
         };
+    }
+
+    addMouseEvents() {
+        this.onMouseMove = (e) => this._onMouseMove(e);
+        window.addEventListener('mousemove', this.onMouseMove);
+
+        this.onMouseUp = (e) => this._onMouseUp(e);
+        window.addEventListener("mouseup", this.onMouseUp);
+        this.mouseEventsAdded = true;
     }
 
     init() {
@@ -155,11 +175,15 @@ export default class MarkersPlugin {
      */
     add(params) {
         let marker = {
+            id: params.id,
             time: params.time,
             label: params.label,
             color: params.color || DEFAULT_FILL_COLOR,
             position: params.position || DEFAULT_POSITION,
-            draggable: !!params.draggable
+            draggable: !!params.draggable,
+            textPosition: params.textPosition || DEFAULT_TEXTPOSITION,
+            lowerLimit: params.lowerLimit,
+            upperLimit: params.upperLimit
         };
 
         marker.el = this._createMarkerElement(marker, params.markerElement);
@@ -167,6 +191,10 @@ export default class MarkersPlugin {
         this.wrapper.appendChild(marker.el);
         this.markers.push(marker);
         this._updateMarkerPositions();
+
+        if (params.draggable && !this.mouseEventsAdded) {
+            this.addMouseEvents();
+        }
 
         return marker;
     }
@@ -186,7 +214,7 @@ export default class MarkersPlugin {
         this.markers.splice(index, 1);
     }
 
-    _createPointerSVG(color, position) {
+    _createPointerSVG(color, position, textPosition) {
         const svgNS = "http://www.w3.org/2000/svg";
 
         const el = document.createElementNS(svgNS, "svg");
@@ -204,13 +232,19 @@ export default class MarkersPlugin {
 
         el.appendChild(polygon);
 
-        this.style(el, {
+        const styleObject = {
             width: this.markerWidth + "px",
             height: this.markerHeight + "px",
             "min-width": this.markerWidth + "px",
-            "margin-right": "5px",
             "z-index": 4
-        });
+        };
+        if (textPosition == 'right') {
+            styleObject["margin-right"] = "5px";
+        } else {
+            styleObject["margin-left"] = "5px";
+        }
+
+        this.style(el, styleObject);
         return el;
     }
 
@@ -231,21 +265,35 @@ export default class MarkersPlugin {
         const line = document.createElement('div');
         const width = markerElement ? markerElement.width : this.markerWidth;
         marker.offset = (width - this.markerLineWidth) / 2;
-        this.style(line, {
-            "flex-grow": 1,
-            "margin-left": marker.offset + "px",
-            background: "black",
-            width: this.markerLineWidth + "px",
-            opacity: 0.1
-        });
+        if (marker.textPosition == 'right') {
+            this.style(line, {
+                "flex-grow": 1,
+                "margin-left": marker.offset + "px",
+                background: "black",
+                width: this.markerLineWidth + "px",
+                opacity: 0.1
+            });
+        } else {
+            this.style(line, {
+                "flex-grow": 1,
+                "margin-right": marker.offset + "px",
+                "border-right-color": "black",
+                "border-right-style" : "solid",
+                "border-right-width": this.markerLineWidth + "px",
+                opacity: 0.1
+            });
+        }
+
         el.appendChild(line);
 
         const labelDiv = document.createElement('div');
-        const point = markerElement || this._createPointerSVG(marker.color, marker.position);
+        const point = markerElement || this._createPointerSVG(marker.color, marker.position, marker.textPosition);
         if (marker.draggable){
             point.draggable = false;
         }
-        labelDiv.appendChild(point);
+        if (marker.textPosition == 'right') {
+            labelDiv.appendChild(point);
+        }
 
         if ( label ) {
             const labelEl = document.createElement('span');
@@ -264,6 +312,10 @@ export default class MarkersPlugin {
         });
 
         el.appendChild(labelDiv);
+
+        if (marker.textPosition == 'left') {
+            labelDiv.appendChild(point);
+        }
 
         labelDiv.addEventListener("click", e => {
             e.stopPropagation();
@@ -306,7 +358,10 @@ export default class MarkersPlugin {
             this.wavesurfer.params.pixelRatio;
 
         const positionPct = Math.min(params.time / duration, 1);
-        const leftPx = ((elementWidth * positionPct) - params.offset);
+        let leftPx = ((elementWidth * positionPct) - params.offset);
+        if (params.textPosition == 'left') {
+            leftPx = leftPx - params.el.scrollWidth + 1 * this.markerWidth;
+        }
         this.style(params.el, {
             "left": leftPx + "px",
             "max-width": (elementWidth - leftPx) + "px"
@@ -329,8 +384,17 @@ export default class MarkersPlugin {
         if (!this.dragging){
             this.dragging = true;
             this.wavesurfer.fireEvent("marker-drag", this.selectedMarker, event);
+            this.lastDragEvent = Date.now();
+        } else {
+            const elapsed = Date.now() - this.lastDragEvent;
+            this.lastDragEvent = Date.now();
+            if (elapsed >= MOUSEMOVE_FREQUENCYMS) {
+                this.wavesurfer.fireEvent("marker-drag", this.selectedMarker, event);
+            }
         }
-        this.selectedMarker.time = this.wavesurfer.drawer.handleEvent(event) * this.wavesurfer.getDuration();
+
+
+        this.selectedMarker.time = this._checkLimits(this.wavesurfer.drawer.handleEvent(event) * this.wavesurfer.getDuration(), this.selectedMarker);
         this._updateMarkerPositions();
     }
 
@@ -355,7 +419,7 @@ export default class MarkersPlugin {
 
         event.stopPropagation();
         const duration = this.wavesurfer.getDuration();
-        this.selectedMarker.time = this.wavesurfer.drawer.handleEvent(event) * duration;
+        this.selectedMarker.time = this._checkLimits(this.wavesurfer.drawer.handleEvent(event) * duration, this.selectedMarker);
         this._updateMarkerPositions();
         this.wavesurfer.fireEvent("marker-drop", this.selectedMarker, event);
     }
@@ -368,4 +432,47 @@ export default class MarkersPlugin {
             this.remove(0);
         }
     }
+
+    /**
+     * Checks for lower and upper limits.
+     *
+     * @private
+     * @param {double} time initial time for marker.
+     * @param {MarkerParams} marker marker to check
+     * @returns {double} computed time using limits
+     */
+    _checkLimits(time, marker) {
+        let newTime = time;
+        if (marker.lowerLimit && newTime < marker.lowerLimit) {
+            newTime = marker.lowerLimit;
+        }
+        if (marker.upperLimit && newTime > marker.upperLimit) {
+            newTime = marker.upperLimit;
+        }
+        return newTime;
+    }
+
+    /**
+     * update marker
+     *
+     * @param {MarkerParams} options Marker definition
+     * @param {?int} index index of marker. If not set, marker is identified by id
+     * @return {void}
+     */
+    update(options, index) {
+        let marker;
+        if (index) {
+            if (index < 0 || index > this.markers.length - 1) {
+                return;
+            }
+            marker = this.markers[index];
+        } else {
+            marker = this.markers.find(m => m.id == options.id);
+        }
+        if (marker) {
+            Object.assign(marker, options);
+            this._updateMarkerPositions();
+        }
+    }
+
 }

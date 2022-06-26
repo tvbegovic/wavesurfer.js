@@ -16,12 +16,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 regionsMinLength: 2,
                 regions: [
                     {
+                        id: 'first',
                         start: 1,
                         end: 3,
                         loop: false,
                         color: 'hsla(400, 100%, 30%, 0.5)'
                     },
                     {
+                        id: 'second',
                         start: 5,
                         end: 7,
                         loop: false,
@@ -40,6 +42,13 @@ document.addEventListener('DOMContentLoaded', function() {
     wavesurfer.on('error', function(e) {
         console.warn(e);
     });
+
+    setTimeout( ()=> wavesurfer.regions.update({
+        id: 'first',
+        start: 8,
+        end: 10,
+        color: 'rgba(255,0,0,0.1)'
+    }), 3000);
 
     // Load audio from URL
     wavesurfer.load('../media/demo.wav');
@@ -64,4 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
     ).addEventListener('click', function() {
         wavesurfer.pause();
     });
+
+
 });

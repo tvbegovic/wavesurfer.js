@@ -13,30 +13,39 @@ document.addEventListener('DOMContentLoaded', function() {
         progressColor: '#3B8686',
         backend: 'MediaElement',
         plugins: [
-            WaveSurfer.markers.create({
-                markers: [
-                    {
-                        time: 0,
-                        label: "BEGIN",
-                        color: '#ff990a'
-                    },
-                    {
-                        time: 5.5,
-                        label: "V1",
-                        color: '#ff990a',
-                        draggable: true
-                    },
-
-                    {
-                        time: 24,
-                        label: "END",
-                        color: '#00ffcc',
-                        position: 'top'
-                    }
-                ]
-            })
+            WaveSurfer.markers.create({})
         ]
     });
+
+    const markers = [
+        {
+            time: 0,
+            label: "BEGIN",
+            color: '#ff990a'
+        },
+        {
+            id: 'second',
+            time: 10,
+            label: "V1",
+            color: '#ff990a',
+            draggable: true,
+            position: 'top',
+            lowerLimit: 3
+        },
+
+        {
+            id: 'third',
+            time: 10,
+            label: "END",
+            color: '#00ffcc',
+            position: 'bottom',
+            textPosition: 'left',
+            draggable: true
+        }
+    ];
+    for (const m of markers) {
+        wavesurfer.markers.add(m);
+    }
 
     var img = new Image(40, 40);
     img.src = "./settings_icon.png";
@@ -44,16 +53,25 @@ document.addEventListener('DOMContentLoaded', function() {
         wavesurfer.markers.add({
             time: 12,
             position: "bottom",
-            markerElement: img
+            markerElement: img,
+            draggable: true
         });
     };
+
+    /*const newMarker = Object.assign({}, markers[1]);
+    newMarker.time = 7;
+    setTimeout(() => {
+        wavesurfer.markers.update(newMarker, 1);
+        newMarker.time = 8;
+        setTimeout(() => wavesurfer.markers.update(newMarker), 3000);
+    }, 3000);*/
 
     wavesurfer.on('error', function(e) {
         console.warn(e);
     });
 
     wavesurfer.on('marker-drag', function(marker) {
-        console.log("marker drag", marker.label);
+        console.log("marker drag", marker.label, marker.time);
     });
 
     wavesurfer.on('marker-drop', function(marker) {
