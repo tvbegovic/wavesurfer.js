@@ -2,11 +2,70 @@
 
 // Create an instance
 var wavesurfer; // eslint-disable-line no-var
+var markers = { eom: 21.773, cout: 21.773 };
+var arrMarkers = [
+    {
+        id: 'cuein',
+        time: 0,
+        label: 'cue in',
+        position: 'top',
+        draggable: false
+    },
+    {
+        id: 'intro',
+        time: 0,
+        label: 'intro',
+        position: 'bottom',
+        draggable : true
+    },
+    {
+        id: 'eom',
+        time: 21.773875,
+        label: 'cue out',
+        color: '#00ffcc',
+        position: 'bottom',
+        textPosition: 'left',
+        draggable: true,
+        upperLimit: 21.773785
+    },
+    {
+        id: 'cout',
+        time: 21.773875,
+        label: "cue out",
+        color: '#00ffcc',
+        position: 'top',
+        textPosition: 'left',
+        draggable: true,
+        upperLimit: 21.773785
+    }
+];
+
+function onBtnclick(op, marker) {
+    let value = markers[marker];
+    if (op == '+') {
+        value += 0.05;
+    } else {
+        value -= 0.05;
+    }
+    if (op == '+') {
+        value = Math.min(wavesurfer.getDuration(), value);
+    }
+
+    markers[marker] = value;
+    document.getElementById(marker).innerText = value.toFixed(3).toString();
+    const markerOptions = arrMarkers.find(a => a.id == marker);
+    if (markerOptions) {
+        markerOptions.time = value;
+        wavesurfer.markers.update(markerOptions);
+    }
+}
 
 // Init & load audio file
 document.addEventListener('DOMContentLoaded', function() {
     // Init
 
+    document.getElementById('eom').innerText = markers['eom'].toFixed(2).toString();
+    document.getElementById('cout').innerText = markers['cout'].toFixed(2).toString();
     wavesurfer = WaveSurfer.create({
         container: document.querySelector('#waveform'),
         waveColor: '#A8DBA8',
@@ -17,37 +76,11 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     });
 
-    const markers = [
-        {
-            time: 0,
-            label: "BEGIN",
-            color: '#ff990a'
-        },
-        {
-            id: 'second',
-            time: 10,
-            label: "V1",
-            color: '#ff990a',
-            draggable: true,
-            position: 'top',
-            lowerLimit: 3
-        },
-
-        {
-            id: 'third',
-            time: 10,
-            label: "END",
-            color: '#00ffcc',
-            position: 'bottom',
-            textPosition: 'left',
-            draggable: true
-        }
-    ];
-    for (const m of markers) {
+    for (const m of arrMarkers) {
         wavesurfer.markers.add(m);
     }
 
-    var img = new Image(40, 40);
+    /*var img = new Image(40, 40);
     img.src = "./settings_icon.png";
     img.onload = () => {
         wavesurfer.markers.add({
@@ -56,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
             markerElement: img,
             draggable: true
         });
-    };
+    };*/
 
     /*const newMarker = Object.assign({}, markers[1]);
     newMarker.time = 7;
@@ -80,4 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load audio from URL
     wavesurfer.load('../media/demo.wav');
+    setTimeout(() => console.log(wavesurfer.getDuration()), 2000);
+
 });

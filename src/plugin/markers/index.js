@@ -220,15 +220,17 @@ export default class MarkersPlugin {
         const el = document.createElementNS(svgNS, "svg");
         const polygon = document.createElementNS(svgNS, "polygon");
 
-        el.setAttribute("viewBox", "0 0 40 80");
-
+        el.setAttribute("viewBox", "0 0 30 60");
+        const points = position == 'bottom' ?
+            textPosition == "right" ? "0 0 30 30 30 60 0 60" : "0 30 30 0 30 60 0 60" :
+            textPosition == "right" ? '0 0 30 0 30 30 0 60' : '0 0 30 0 30 60 0 30';
         polygon.setAttribute("id", "polygon");
         polygon.setAttribute("stroke", "#979797");
         polygon.setAttribute("fill", color);
-        polygon.setAttribute("points", "20 0 40 30 40 80 0 80 0 30");
-        if ( position == "top" ) {
-            polygon.setAttribute("transform", "rotate(180, 20 40)");
-        }
+        polygon.setAttribute("points", points);
+        /*if ( position == "top" ) {
+            polygon.setAttribute("transform", "rotate(180, 0 0)");
+        }*/
 
         el.appendChild(polygon);
 
@@ -268,7 +270,7 @@ export default class MarkersPlugin {
         if (marker.textPosition == 'right') {
             this.style(line, {
                 "flex-grow": 1,
-                "margin-left": marker.offset + "px",
+                /*"margin-left": marker.offset + "px",*/
                 background: "black",
                 width: this.markerLineWidth + "px",
                 opacity: 0.1
@@ -276,7 +278,7 @@ export default class MarkersPlugin {
         } else {
             this.style(line, {
                 "flex-grow": 1,
-                "margin-right": marker.offset + "px",
+                /*"margin-right": marker.offset + "px",*/
                 "border-right-color": "black",
                 "border-right-style" : "solid",
                 "border-right-width": this.markerLineWidth + "px",
@@ -296,19 +298,20 @@ export default class MarkersPlugin {
         }
 
         if ( label ) {
-            const labelEl = document.createElement('span');
+            const labelEl = document.createElement('div');
             labelEl.innerText = label;
             this.style(labelEl, {
                 "font-family": "monospace",
-                "font-size": "90%"
+                "font-size": "90%",
+                "white-space" : "nowrap"
             });
             labelDiv.appendChild(labelEl);
         }
 
         this.style(labelDiv, {
-            display: "flex",
-            "align-items": "center",
-            cursor: "pointer"
+            display: "flex"/*,
+            "align-items": "center"*/,
+            cursor: (marker.draggable ? "pointer" : "auto")
         });
 
         el.appendChild(labelDiv);
@@ -357,14 +360,19 @@ export default class MarkersPlugin {
             this.wavesurfer.drawer.width /
             this.wavesurfer.params.pixelRatio;
 
+        /*console.log(`time: ${params.time}`);
+        console.log(`duration: ${duration}`);
+        console.log(`elementWidth: ${elementWidth} offset: ${params.offset}`);*/
         const positionPct = Math.min(params.time / duration, 1);
-        let leftPx = ((elementWidth * positionPct) - params.offset);
+        let leftPx = (elementWidth * positionPct);
         if (params.textPosition == 'left') {
-            leftPx = leftPx - params.el.scrollWidth + 1 * this.markerWidth;
+            leftPx = leftPx - params.el.scrollWidth;
         }
+        //const maxWidth = params.textPosition == 'right' ? (elementWidth - leftPx) : Math.max(elementWidth - leftPx, params.el.scrollWidth);
+        const maxWidth = elementWidth - leftPx;
         this.style(params.el, {
             "left": leftPx + "px",
-            "max-width": (elementWidth - leftPx) + "px"
+            "max-width": maxWidth + "px"
         });
     }
 

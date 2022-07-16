@@ -29,6 +29,11 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/default.min.css">
         <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
         <script>hljs.highlightAll();</script>
+        <style>
+          .indicators {
+            display: flex;
+          }
+        </style>
     </head>
 
     <body itemscope itemtype="http://schema.org/WebApplication">
@@ -55,6 +60,23 @@
                         Pause
                     </button>
                 </div>
+            </div>
+            <div class="indicators">
+              <div class="row">
+                <div class="col-lg-2">eom</div>
+                <div class="col-lg-2" id="eom"></div>
+                <div class="col-lg-4" style="display:flex;flex-direction:row">
+                  <button class="btn" onclick="onBtnclick('+', 'eom')">+</button><button class="btn" onclick="onBtnclick('-', 'eom')">-</button>
+                </div>                
+              </div>
+              <div class="row">
+                <div class="col-lg-2">cue out</div>
+                <div class="col-lg-2" id="cout"></div>
+                <div class="col-lg-4" style="display:flex;flex-direction:row">
+                  <button class="btn" onclick="onBtnclick('+', 'cout')">+</button><button class="btn" onclick="onBtnclick('-', 'cout')">-</button>
+                </div>                
+              </div>
+              
             </div>
 
             <div class="row marketing">
